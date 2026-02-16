@@ -1,0 +1,48 @@
+name: Update Evohome on HA Core Changes
+
+on:
+  schedule:
+    - cron: "0 3 * * *"   # once per day at 03:00 UTC
+  workflow_dispatch:
+
+jobs:
+  update-evohome:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get latest commit hash from home-assistant/core
+        id: hacore
+        run: |
+          git clone --depth=1 https://github.com/home-assistant/core tmp-ha-core
+          cd tmp-ha-core
+          echo "hash=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Load previous commit hash
+        id: prev
+        run: |
+          if [ -f last_hash.txt ]; then
+            echo "previous=$(cat last_hash.txt)" >> $GITHUB_OUTPUT
+          else
+            echo "previous=none" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Save new commit hash
+        if: steps.prev.outputs.previous != steps.hacore.outputs.hash
+        run: echo "${{ steps.hacore.outputs.hash }}" > last_hash.txt
+
+      - name: Commit updated hash
+        if: steps.prev.outputs.previous != steps.hacore.outputs.hash
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Update stored HA Core commit SHA"
+          file_pattern: last_hash.txt
+
+      - name: Run update-evohome.sh
+        if: steps.prev.outputs.previous != steps.hacore.outputs.hash
+        run: |
+          echo "New Home Assistant Core commit detected — running update-evohome.sh"
+          chmod +x scripts/update-evohome.sh
+          scripts/update-evohome.sh
