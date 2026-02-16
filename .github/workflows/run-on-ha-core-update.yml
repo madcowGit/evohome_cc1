@@ -1,101 +1,74 @@
-name: Update Evohome on HA Core Changes
+name: Sync evohome from HA Core
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * *" # Daily at 03:17 UTC (adjust as you prefer)
 
 permissions:
   contents: write
 
-on:
-  schedule:
-    - cron: "0 3 * * *"   # once per day at 03:00 UTC
-  workflow_dispatch:
+concurrency:
+  group: sync-evohome-from-ha-core
+  cancel-in-progress: false
 
 jobs:
-  update-evohome:
+  sync:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Get latest commit hash from home-assistant/core
-        id: hacore
-        run: |
-          git clone --depth=1 https://github.com/home-assistant/core tmp-ha-core
-          cd tmp-ha-core
-          echo "hash=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
-
-      - name: Load previous commit hash
-        id: prev
-        run: |
-          if [ -f last_hash.txt ]; then
-            echo "previous=$(cat last_hash.txt)" >> $GITHUB_OUTPUT
-          else
-            echo "previous=none" >> $GITHUB_OUTPUT
-          fi
-          # temporary step: always run following steps
-          echo "previous=none" >> $GITHUB_OUTPUT
-
-      - name: Save new commit hash
-        if: steps.prev.outputs.previous != steps.hacore.outputs.hash
-        run: echo "${{ steps.hacore.outputs.hash }}" > last_hash.txt
-
-      - name: Commit updated hash
-        if: steps.prev.outputs.previous != steps.hacore.outputs.hash
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "Update stored HA Core commit SHA"
-          file_pattern: last_hash.txt
-
-      - name: Copy HA Core evohome → ha_evohome_original
-        if: steps.prev.outputs.previous != steps.hacore.outputs.hash
+      # 1) Checkout THIS repo (yours), full history for reliable diffs/commits
+      - name: Checkout this repository
         uses: actions/checkout@v4
         with:
-          # Checkout the Home Assistant Core repository into a temp path
+          fetch-depth: 0
+          persist-credentials: true
+
+      # 2) Checkout ONLY the evohome directory from HA Core with sparse checkout
+      - name: Checkout home-assistant/core (sparse)
+        uses: actions/checkout@v4
+        with:
           repository: home-assistant/core
-          ref: master
-          path: ha-core-tmp
-          # Only pull the evohome component (sparse checkout keeps it light)
+          path: _ha_core
+          fetch-depth: 1
+          # Do NOT set ref; default branch of HA Core will be used automatically.
+          # If you need a specific branch, add: ref: dev (or main/master)
           sparse-checkout: |
             homeassistant/components/evohome
-          sparse-checkout-cone-mode: false
+          sparse-checkout-cone: true
 
-      - name: Stage evohome files
-        if: steps.prev.outputs.previous != steps.hacore.outputs.hash
+      # 3) Sync files into your repo under ha_evohome_original/evohome/
+      #    Using rsync with --delete so removed upstream files are removed here too.
+      - name: Sync evohome folder into this repo
         run: |
-          rm -rf ha_evohome_original
-          mkdir -p ha_evohome_original
-          # Copy *contents* of the evohome component into destination
-          cp -R ha-core-tmp/homeassistant/components/evohome/* ha_evohome_original/
-          # Optional: list what was copied for debugging
-          echo "Copied files:"
-          ls -la ha_evohome_original
-          # Cleanup
-          rm -rf ha-core-tmp
+          set -euxo pipefail
+          mkdir -p ha_evohome_original/evohome
+          rsync -a --delete "_ha_core/homeassistant/components/evohome/" "ha_evohome_original/evohome/"
 
-      - name: Stage evohome files (→ ha_evohome/)
-        if: steps.prev.outputs.previous != steps.hacore.outputs.hash
+      # 4) Determine if anything actually changed
+      - name: Check for changes
+        id: changes
         run: |
-            rm -rf ha_evohome
-            mkdir -p ha_evohome
-            cp -R ha-core-tmp/homeassistant/components/evohome/* ha_evohome/
-            echo "Copied files:"
-            ls -la ha_evohome
-            # Cleanup temp checkout
-            rm -rf ha-core-tmp
-    
-        # Commit and push if there are changes
-      - name: Commit & push ha_evohome/ if changed
-        if: steps.prev.outputs.previous != steps.hacore.outputs.hash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          set -e
+          if [ -n "$(git status --porcelain -- ha_evohome_original)" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # 5) Commit & push only if changed
+      - name: Commit and push
+        if: steps.changes.outputs.changed == 'true'
         run: |
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"    
-            git add ha_evohome    
-            if ! git diff --cached --quiet; then
-              commit_msg="chore: update ha_evohome from HA Core evohome ($(date -u +'%Y-%m-%d %H:%M:%S UTC'))"
-              git commit -m "$commit_msg"
-              git push
-              echo "Changes committed & pushed."
-            else
-              echo "No changes detected; nothing to commit."
-            fi
+          set -euxo pipefail
+
+          # Identify upstream HA Core commit for traceability
+          HA_SHA=$(git -C _ha_core rev-parse --short HEAD || echo "unknown")
+          HA_BRANCH=$(git -C _ha_core rev-parse --abbrev-ref HEAD || echo "unknown")
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add ha_evohome_original
+          git commit -m "chore(sync): evohome from home-assistant/core@${HA_SHA} (${HA_BRANCH}) [skip ci]"
+          git push
