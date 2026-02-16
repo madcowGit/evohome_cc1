@@ -31,6 +31,8 @@ jobs:
           else
             echo "previous=none" >> $GITHUB_OUTPUT
           fi
+          # temporary step: always run following steps
+          echo "previous=none" >> $GITHUB_OUTPUT
 
       - name: Save new commit hash
         if: steps.prev.outputs.previous != steps.hacore.outputs.hash
