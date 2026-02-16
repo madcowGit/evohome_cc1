@@ -43,9 +43,35 @@ jobs:
           commit_message: "Update stored HA Core commit SHA"
           file_pattern: last_hash.txt
 
-      - name: Run update-evohome.sh
+      - name: Copy HA Core evohome → ha_evohome_original
+        if: steps.prev.outputs.previous != steps.hacore.outputs.hash
+        uses: actions/checkout@v4
+        with:
+          # Checkout the Home Assistant Core repository into a temp path
+          repository: home-assistant/core
+          ref: master
+          path: ha-core-tmp
+          # Only pull the evohome component (sparse checkout keeps it light)
+          sparse-checkout: |
+            homeassistant/components/evohome
+          sparse-checkout-cone-mode: false
+
+      - name: Stage evohome files
         if: steps.prev.outputs.previous != steps.hacore.outputs.hash
         run: |
-          echo "New Home Assistant Core commit detected — running update-evohome.sh"
-          chmod +x scripts/update-evohome.sh
-          scripts/update-evohome.sh
+          rm -rf ha_evohome_original
+          mkdir -p ha_evohome_original
+          # Copy *contents* of the evohome component into destination
+          cp -R ha-core-tmp/homeassistant/components/evohome/* ha_evohome_original/
+          # Optional: list what was copied for debugging
+          echo "Copied files:"
+          ls -la ha_evohome_original
+          # Cleanup
+          rm -rf ha-core-tmp
+
+#      - name: Run update-evohome.sh
+#        if: steps.prev.outputs.previous != steps.hacore.outputs.hash
+#        run: |
+#          echo "New Home Assistant Core commit detected — running update-evohome.sh"
+#          chmod +x scripts/update-evohome.sh
+#          scripts/update-evohome.sh
