@@ -72,6 +72,14 @@ jobs:
             echo "Updating files in evohome_cc$i/"
             # Update the files within the integration with proper values
             sed -i "/domain/ s/evohome/evohome_cc$i/" custom_components/evohome_cc$i/manifest.json
+            sed -i 's/"name": *"[^"]*"/"name": "evohome_cc$i (custom_component)"/' custom_components/evohome_cc$i/manifest.json
+            sed -i 's#"documentation": *"[^"]*"#"documentation": "https://github.com/madcowGit/evohome_cc1"#' custom_components/evohome_cc$i/manifest.json
+            
+            sed -i '/"codeowners":/{
+              s/\]/, "@madcowGit"\]/
+              s/, "@madcowGit", "@madcowGit"/, "@madcowGit"/
+            }' manifest.json
+            
             sed -i '/{/a \ \ "version": "0.0.1",'     custom_components/evohome_cc$i/manifest.json
             sed -i "/DOMAIN/ s/evohome/evohome_cc$i/" custom_components/evohome_cc$i/const.py
           done
