@@ -86,7 +86,9 @@ jobs:
             
             
             # make manifest.json alphabetically
-            jq -S '.' manifest.json > manifest.sorted.json && mv manifest.sorted.json manifest.json
+            tmp=$(mktemp)
+            jq -S '.' manifest.json > "$tmp" && mv "$tmp" manifest.json
+
             
           done
 
