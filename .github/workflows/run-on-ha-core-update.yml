@@ -73,7 +73,7 @@ jobs:
             cd custom_components/evohome_cc$i/
             # Update the files within the integration with proper values
             sed -i "/domain/ s/evohome/evohome_cc$i/" manifest.json
-            sed -i 's/"name": *"[^"]*"/"name": "evohome_cc$i (custom_component)"/' manifest.json
+            sed -i "s/\"name\": *\"[^\"]*\"/\"name\": \"evohome_cc${i} (custom_component)\"/" manifest.json
             sed -i 's#"documentation": *"[^"]*"#"documentation": "https://github.com/madcowGit/evohome_cc1"#' manifest.json
             
             sed -i '/"codeowners":/{
@@ -83,6 +83,11 @@ jobs:
             
             sed -i '/{/a \ \ "version": "0.0.1",'     manifest.json
             sed -i "/DOMAIN/ s/evohome/evohome_cc$i/" const.py
+            
+            
+            # make manifest.json alphabetically
+            jq -S '.' manifest.json > manifest.sorted.json && mv manifest.sorted.json manifest.json
+            
           done
 
       # 4) Determine if anything actually changed
