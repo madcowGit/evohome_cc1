@@ -53,6 +53,7 @@ jobs:
           #
           # List current folder contents & goto custom components folder         
           ls -al
+          mkdir -p custom_components
           ls -al custom_components/*          
                       
           # Delete all old evohome folders
