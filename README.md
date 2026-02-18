@@ -1,9 +1,23 @@
-pull evohome integration from ha_core daily
+I needed multiple locations for my evohome setup in Home Assistant. This requires that multiple custom components are set up per location.
+No changes to the integration are made
 
-modify it into my own integration
+This repository checks the ha_core daily and:
+- pulls evohome integration 
+- modify it into custom integration
+- releases new version if changes have been detected
 
 
-# Installation
+## Installation
+
+### HACS (as a custom repository)
+
+1. In Home Assistant, open **HACS → Integrations**.  
+2. Click **⋯ (three dots)** → **Custom repositories**.  
+3. Paste `https://github.com/madcowGit/evhohome_cc1` and select **Type: Integration**, then click **Add**.  
+4. Back in HACS, search for **Honeywell Total Connect Comfort (Europe) (evohome_cc1 custom component)** and click **Install**.  
+5. Restart Home Assistant when prompted.
+
+### YAML configuration (required)
 This still requires that integration is configured in configuration.yaml
 
 ```
@@ -12,3 +26,6 @@ evohome_cc1:
     password: <your password>
     location_idx: 1
 ```
+
+## Acknowledgements
+- original evohome integration and script to create additional custom_components: https://gist.github.com/zxdavb/d898e594091753d703c858c9accc59d2
