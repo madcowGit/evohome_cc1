@@ -52,12 +52,12 @@ jobs:
           INSTANCES=1      
           #
           # List current folder contents & goto custom components folder         
-          ls -al custom_components/*
-          cd custom_components
+          ls -al
+          ls -al custom_components/*          
                       
           # Delete all old evohome folders
           echo "Removing all evohome_x folders..."
-          rm -rf evohome_cc*
+          rm -rf custom_components/evohome_cc*
                     
           # Create all new evohome instances
           for i in $(seq $INSTANCES)
