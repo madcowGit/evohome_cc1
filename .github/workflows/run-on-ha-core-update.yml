@@ -50,7 +50,6 @@ jobs:
           #
           # How many extra copies of the integration do you want?
           INSTANCES=1      
-          HA_VERSION=`ha core info | grep "version:" | cut -d' ' -f2`
           #
           # List current folder contents & goto custom components folder         
           ls -al custom_components/*
