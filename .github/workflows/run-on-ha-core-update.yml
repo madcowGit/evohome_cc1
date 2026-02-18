@@ -42,15 +42,46 @@ jobs:
       - name: Sync evohome folder into this repo
         run: |
           set -euxo pipefail
-          mkdir -p ha_evohome_original/evohome
-          rsync -a --delete "_ha_core/homeassistant/components/evohome/" "ha_evohome_original/evohome/"
+          # Based on the description here:
+          #  https://github.com/zxdavb/evohome-async/wiki/Hass:-Multiple-Evohome-Locations      
+          # This script is tested on Home Assistant OS.
+          # The script should be placed in this location: /config/custom_components/ and run from there.
+          # Run the script once every time you have updated the HA core.
+          #
+          # How many extra copies of the integration do you want?
+          INSTANCES=1      
+          HA_VERSION=`ha core info | grep "version:" | cut -d' ' -f2`
+          #
+          # List current folder contents & goto custom components folder         
+          ls -al custom_components/*
+          cd custom_components
+                      
+          # Delete all old evohome folders
+          echo "Removing all evohome_x folders..."
+          rm -rf evohome_cc*
+                    
+          # Create all new evohome instances
+          for i in $(seq $INSTANCES)
+          do
+            echo "Creating evohome_cc$i/" 
+           
+            # Copy the evohome folder
+            mkdir -p custom_components/evohome_cc$i
+            rsync -a --delete "_ha_core/homeassistant/components/evohome/" "custom_components/evohome_cc$i"
+          
+            echo "Updating files in evohome_cc$i/"
+            # Update the files within the integration with proper values
+            sed -i "/domain/ s/evohome/evohome_cc$i/" evohome_cc$i/manifest.json
+            sed -i '/{/a \ \ "version": "0.0.1",' evohome_$i/manifest.json
+            sed -i "/DOMAIN/ s/evohome/evohome_cc$i/" evohome_cc$i/const.py
+          done
 
       # 4) Determine if anything actually changed
       - name: Check for changes
         id: changes
         run: |
           set -e
-          if [ -n "$(git status --porcelain -- ha_evohome_original)" ]; then
+          if [ -n "$(git status --porcelain -- custom_components)" ]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -69,6 +100,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add ha_evohome_original
+          git add custom_components
           git commit -m "chore(sync): evohome from home-assistant/core@${HA_SHA} (${HA_BRANCH}) [skip ci]"
           git push
