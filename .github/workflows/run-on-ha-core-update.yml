@@ -35,7 +35,7 @@ jobs:
           # If you need a specific branch, add: ref: dev (or main/master)
           sparse-checkout: |
             homeassistant/components/evohome
-          sparse-checkout-cone: true
+          sparse-checkout-cone-mode: true
 
       # 3) Sync files into your repo under ha_evohome_original/evohome/
       #    Using rsync with --delete so removed upstream files are removed here too.
