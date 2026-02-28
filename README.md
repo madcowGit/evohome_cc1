@@ -20,6 +20,7 @@ All actions are done by workflow: https://github.com/madcowGit/evohome_cc1/blob/
 
 ### YAML configuration (required)
 This still requires that integration is configured in configuration.yaml
+see: https://www.home-assistant.io/integrations/evohome/
 
 ```
 evohome_cc1:
