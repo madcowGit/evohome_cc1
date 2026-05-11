@@ -14,7 +14,7 @@ All actions are done by workflow: https://github.com/madcowGit/evohome_cc1/blob/
 
 1. In Home Assistant, open **HACS → Integrations**.  
 2. Click **⋯ (three dots)** → **Custom repositories**.  
-3. Paste `https://github.com/madcowGit/evhohome_cc1` and select **Type: Integration**, then click **Add**.  
+3. Paste `https://github.com/madcowGit/evohome_cc1` and select **Type: Integration**, then click **Add**.  
 4. Back in HACS, search for **Honeywell Total Connect Comfort (Europe) (evohome_cc1 custom component)** and click **Install**.  
 5. Restart Home Assistant when prompted.
 
