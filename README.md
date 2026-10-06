@@ -38,3 +38,5 @@ This is a derivative work of the Home Assistant evohome integration, which is al
 ## Acknowledgements
 - original evohome integration and script to create additional custom_components: https://gist.github.com/zxdavb/d898e594091753d703c858c9accc59d2
 - manual steps to create additional integration are outlined here: https://github.com/zxdavb/evohome-async/wiki/Hass:-Multiple-Evohome-Locations
+
+(just a useless edit to keep repository alive) 
